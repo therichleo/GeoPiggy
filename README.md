@@ -1,6 +1,8 @@
 # Smart Piggy Bank with Money Tracking and Mobile App
 Academic project in development (2025). This repository contains the source code for a smart piggy bank that combines hardware with web and mobile software to monitor savings in real time.
+
 Technical Description
+
 This project integrates a ReactJS application with an ESP32 microcontroller programmed via the Arduino IDE, enabling real-time communication through WebSockets over Wi-Fi.
 The piggy bank is capable of:
 -Detecting and counting inserted money using sensors such as:
