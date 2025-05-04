@@ -1,61 +1,81 @@
 /* 
-#include <arduino.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 
 const char* ssid = "WiFi_Mesh-900486";
 const char* password = "XbuZ44tA";
+const int boton = 0;
 
-const String botToken = "7583295257:AAFUs6a2xhveno2gJlNrwc8mmZYDdMqRXH0";
-const String chatID = "-4721788049";  
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
-const int boton = 0; 
+int contador = 0;
+bool presionado = false;
 
-bool enviado = false;
+void notifyClients() {
+  ws.textAll("{\"contador\": " + String(contador) + "}");
+}
+
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
+  AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+    data[len] = 0;
+    String msg = (char*)data;
+    if (msg == "reset") {
+      contador = 0;
+      notifyClients();
+    }
+  }
+}
+
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+             void *arg, uint8_t *data, size_t len) {
+  switch (type) {
+    case WS_EVT_CONNECT:
+      Serial.printf("Cliente #%u conectado desde %s\n", client->id(), client->remoteIP().toString().c_str());
+      client->text("{\"contador\": " + String(contador) + "}"); 
+      break;
+    case WS_EVT_DATA:
+      handleWebSocketMessage(arg, data, len);
+      break;
+    default:
+      break;
+  }
+}
 
 void setup() {
   Serial.begin(115200);
   pinMode(boton, INPUT_PULLUP);
 
   WiFi.begin(ssid, password);
-  Serial.print("Conectando a WiFi...");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println(" conectado!");
+
+  Serial.println("\nWiFi conectado");
+  Serial.println(WiFi.localIP());
+
+  ws.onEvent(onEvent);
+  server.addHandler(&ws);
+  server.begin();
 }
 
 void loop() {
-  if (digitalRead(boton) == LOW && !enviado) {
-    Serial.println("Botón presionado, enviando mensaje...");
+  ws.cleanupClients();
 
-    if (WiFi.status() == WL_CONNECTED) {
-      HTTPClient http;
-
-      String mensaje = "Kero Pasta";
-      String url = "https://api.telegram.org/bot" + botToken +
-                   "/sendMessage?chat_id=" + chatID + "&text=" + mensaje;
-
-      http.begin(url);
-      int httpResponseCode = http.GET();
-
-      if (httpResponseCode > 0) {
-        Serial.println("Mensaje enviado con éxito.");
-      } else {
-        Serial.println("Error enviando mensaje.");
-      }
-
-      http.end();
-      enviado = true;
-    }
+  if (digitalRead(boton) == LOW && !presionado) {
+    contador++;
+    notifyClients();
+    presionado = true;
   }
 
   if (digitalRead(boton) == HIGH) {
-    enviado = false; 
+    presionado = false;
   }
 
-  delay(100);
+  delay(50);
 }
 
  */
