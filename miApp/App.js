@@ -3,8 +3,10 @@ import { View, Text, Button, StyleSheet, ImageBackground } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { TouchableOpacity, Image, TextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import backgroundImage from './assets/Bienvenido.png';  // Usar 'require' para imágenes locales
+
+import backgroundImage from './assets/Bienvenido.png';  
 import backgroundImageDinero from './assets/portadaDinero.png'
 import pfpimage from './assets/pfpimage.png'
 
@@ -90,6 +92,30 @@ function PerfilScreen() {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [editando, setEditando] = useState(false);
 
+  // Cargar el nombre guardado al iniciar
+  useEffect(() => {
+    const cargarNombre = async () => {
+      try {
+        const valorGuardado = await AsyncStorage.getItem('@nombre_usuario');
+        if (valorGuardado !== null) {
+          setNombre(valorGuardado);
+        }
+      } catch (e) {
+        console.error("Error al cargar nombre guardado", e);
+      }
+    };
+    cargarNombre();
+  }, []);
+
+  // Guardar el nombre cuando se actualiza
+  const guardarNombre = async (nuevo) => {
+    try {
+      await AsyncStorage.setItem('@nombre_usuario', nuevo);
+    } catch (e) {
+      console.error("Error al guardar nombre", e);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ImageBackground source={backgroundImage} style={styles.backgroundImage} resizeMode='cover'>
@@ -103,8 +129,6 @@ function PerfilScreen() {
               <Text style={styles.subtitle}>Dinero acumulado total: tanto</Text>
             </View>
           </View>
-
-
 
           <View style={styles.footer}>
             {editando ? (
@@ -120,6 +144,7 @@ function PerfilScreen() {
                   style={styles.saveButton}
                   onPress={() => {
                     setNombre(nuevoNombre);
+                    guardarNombre(nuevoNombre);
                     setEditando(false);
                     setNuevoNombre("");
                   }}
@@ -173,7 +198,7 @@ function CustomButton({ title, onPress }) {
     </TouchableOpacity>
   );
 }
-
+ 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
