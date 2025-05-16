@@ -7,8 +7,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 import backgroundImage from './assets/Bienvenido.png';  
-import backgroundImageDinero from './assets/portadaDinero.png'
 import pfpimage from './assets/pfpimage.png'
+import backgroundImageStats from './assets/Stadistics.png'
+import backgroundImageProfile from './assets/Profile.png'
+import backgroundImageMoney from './assets/Money.png'
 
 // Pantalla principal
 function HomeScreen({ navigation }) {
@@ -76,10 +78,29 @@ function HomeScreen({ navigation }) {
 function DineroScreen() {
   return (
     <View style={styles.container}>
-      <ImageBackground source={backgroundImageDinero} style={styles.backgroundImageDinero} resizeMode='cover'>
+      <ImageBackground source={backgroundImageMoney} style={styles.backgroundImageDinero} resizeMode='cover'>
         <View style={styles.overlay}>
           <Text style={styles.title}>Dinero ahorrado:</Text>
           <Text style={styles.subtitle}>Aquí verás tu dinero ahorrado</Text>
+        </View>
+      </ImageBackground>
+    </View>
+  );
+}
+
+// Pantalla Análisis
+function AnalisisScreen() {
+  return (
+    <View style={styles.container}>
+      <ImageBackground source={backgroundImageStats} style={styles.backgroundImage} resizeMode="cover">
+        <View style={[styles.overlay, { justifyContent: 'flex-start', paddingTop: 100 }]}>
+          <View style={styles.contenedor_analisis}>
+            <Text style={styles.title}>Análisis</Text>
+            <Text style={styles.subtitle}>Aquí verás tu análisis</Text>
+            
+
+
+          </View>
         </View>
       </ImageBackground>
     </View>
@@ -118,8 +139,8 @@ function PerfilScreen() {
 
   return (
     <View style={styles.container}>
-      <ImageBackground source={backgroundImage} style={styles.backgroundImage} resizeMode='cover'>
-        <View style={[styles.overlay, { justifyContent: 'flex-start', paddingTop: 60 }]}>
+      <ImageBackground source={backgroundImageProfile} style={styles.backgroundImage} resizeMode='cover'>
+        <View style={[styles.overlay, { justifyContent: 'flex-start', paddingTop: 100 }]}>
           <View style={styles.rowContainer}>
             <View style={styles.imageWrapper}>
               <Image source={pfpimage} style={styles.image} />
@@ -166,23 +187,36 @@ function PerfilScreen() {
 }
 
 
-// Pantalla Análisis
-function AnalisisScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Pantalla de Análisis</Text>
-    </View>
-  );
-}
 
-// Crear el Stack Navigator
+
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Navigator
+          initialRouteName="Inicio"
+          screenOptions={{
+            headerTransparent: true, // 🔹 hace el header transparente
+            headerTitleAlign: 'center',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+              fontSize: 24,
+              color: 'white', // asegúrate de que el texto se vea sobre el fondo
+            },
+            headerTintColor: 'white', // color del botón "back"
+            headerBackgroundContainerStyle: {
+              backgroundColor: 'transparent',
+            },
+            // Quita sombra (opcional)
+            headerStyle: {
+              backgroundColor: 'transparent',
+              elevation: 0, 
+              shadowOpacity: 0,
+            },
+          }}
+        >
+        <Stack.Screen name="Inicio" component={HomeScreen} />
         <Stack.Screen name="Dinero" component={DineroScreen} />
         <Stack.Screen name="Perfil" component={PerfilScreen} />
         <Stack.Screen name="Analisis" component={AnalisisScreen} />
@@ -226,7 +260,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   footerContainer: {
-    paddingBottom: 20,  // espacio para evitar que se tape con la barra del sistema
+    paddingBottom: 20, 
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   footer: {
@@ -333,6 +367,13 @@ saveButtonText: {
   color: 'white',
   fontWeight: 'bold',
 },
+
+contenedor_analisis: {
+  flex: '1',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  padding: '20',
+}
 
 });
 
