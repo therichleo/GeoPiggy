@@ -3,6 +3,8 @@ import { View, Text, Button, StyleSheet, ImageBackground } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { TouchableOpacity, Image, TextInput } from 'react-native';
+import { Dimensions } from 'react-native';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -11,6 +13,7 @@ import pfpimage from './assets/pfpimage.png'
 import backgroundImageStats from './assets/Stadistics.png'
 import backgroundImageProfile from './assets/Profile.png'
 import backgroundImageMoney from './assets/Money.png'
+
 
 // Pantalla principal
 function HomeScreen({ navigation }) {
@@ -88,17 +91,36 @@ function DineroScreen() {
   );
 }
 
-// Pantalla Análisis
 function AnalisisScreen() {
+  const [meta, setMeta] = useState(10000);
+  const [progreso, setProgreso] = useState(0); // Este dato puede venir de almacenamiento o WebSocket
+
+  const screenWidth = Dimensions.get('window').width;
+  const porcentaje = Math.min(progreso / meta, 1);
+  const margen = 30;
+  const personajeX = margen + porcentaje * (screenWidth - 2 * margen - 73); // 60 = ancho aprox del personaje
+
   return (
     <View style={styles.container}>
       <ImageBackground source={backgroundImageStats} style={styles.backgroundImage} resizeMode="cover">
         <View style={[styles.overlay, { justifyContent: 'flex-start', paddingTop: 100 }]}>
+          
           <View style={styles.contenedor_analisis}>
             <Text style={styles.title}>Análisis</Text>
-            <Text style={styles.subtitle}>Aquí verás tu análisis</Text>
-            
 
+            {/* Visualización parcial del camino */}
+            <View style={styles.caminoContainer}>
+<Image source={require('./assets/fondoCamino.png')} style={styles.caminoFondo} resizeMode="cover" />
+  <Image source={require('./assets/meta.png')} style={[styles.meta, { right: margen }]} resizeMode="contain" />
+  <Image source={require('./assets/personaje.png')} style={[styles.personaje, { left: personajeX }]} resizeMode="contain" />
+</View>
+
+
+            {/* Aquí puedes poner más cosas abajo */}
+            <View style={{ marginTop: 20 }}>
+              <Text style={styles.subtitle}>🎯 Progreso: {progreso} / {meta}</Text>
+              {/* Puedes agregar gráficos, tablas, recomendaciones, etc. */}
+            </View>
 
           </View>
         </View>
@@ -107,34 +129,52 @@ function AnalisisScreen() {
   );
 }
 
+
+
 // Pantalla Perfil
 function PerfilScreen() {
-  const [nombre, setNombre] = useState("Rellena tus datos");
-  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [alias, setAlias] = useState("");
+  const [edad, setEdad] = useState("");
+  const [escuela, setEscuela] = useState("");
   const [editando, setEditando] = useState(false);
 
-  // Cargar el nombre guardado al iniciar
+  const cargarDatos = async () => {
+    try {
+      const n = await AsyncStorage.getItem('@nombre_usuario');
+      const a = await AsyncStorage.getItem('@alias_usuario');
+      const e = await AsyncStorage.getItem('@edad_usuario');
+      const esc = await AsyncStorage.getItem('@escuela_usuario');
+      if (n) setNombre(n);
+      if (a) setAlias(a);
+      if (e) setEdad(e);
+      if (esc) setEscuela(esc);
+    } catch (e) {
+      console.error("Error al cargar datos", e);
+    }
+  };
+
+  const guardarDatos = async () => {
+    try {
+      await AsyncStorage.setItem('@nombre_usuario', nombre);
+      await AsyncStorage.setItem('@alias_usuario', alias);
+      await AsyncStorage.setItem('@edad_usuario', edad);
+      await AsyncStorage.setItem('@escuela_usuario', escuela);
+      setEditando(false);
+    } catch (e) {
+      console.error("Error al guardar datos", e);
+    }
+  };
+
   useEffect(() => {
-    const cargarNombre = async () => {
-      try {
-        const valorGuardado = await AsyncStorage.getItem('@nombre_usuario');
-        if (valorGuardado !== null) {
-          setNombre(valorGuardado);
-        }
-      } catch (e) {
-        console.error("Error al cargar nombre guardado", e);
-      }
-    };
-    cargarNombre();
+    cargarDatos();
   }, []);
 
-  // Guardar el nombre cuando se actualiza
-  const guardarNombre = async (nuevo) => {
-    try {
-      await AsyncStorage.setItem('@nombre_usuario', nuevo);
-    } catch (e) {
-      console.error("Error al guardar nombre", e);
-    }
+  const categoriaEdad = () => {
+    const numEdad = parseInt(edad);
+    if (numEdad < 10) return 'menor de 10';
+    if (numEdad >= 10 && numEdad <= 15) return 'entre 10 y 15';
+    return 'mayor de 15';
   };
 
   return (
@@ -146,39 +186,34 @@ function PerfilScreen() {
               <Image source={pfpimage} style={styles.image} />
             </View>
             <View style={styles.column9}>
-              <Text style={styles.profileText}>Perfil: {nombre}</Text>
-              <Text style={styles.subtitle}>Dinero acumulado total: tanto</Text>
+              <Text style={styles.profileText}>Nombre: {nombre}</Text>
+              <Text style={styles.profileText}>Alias: {alias}</Text>
+              <Text style={styles.profileText}>Edad: {edad} años</Text>
+              <Text style={styles.profileText}>Escuela: {escuela}</Text>
+              <Text style={styles.subtitle}>Categoría edad: {categoriaEdad()}</Text>
             </View>
           </View>
 
-          <View style={styles.footer}>
-            {editando ? (
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Escribe tu nuevo nombre"
-                  placeholderTextColor="#ccc"
-                  value={nuevoNombre}
-                  onChangeText={setNuevoNombre}
-                />
-                <TouchableOpacity
-                  style={styles.saveButton}
-                  onPress={() => {
-                    setNombre(nuevoNombre);
-                    guardarNombre(nuevoNombre);
-                    setEditando(false);
-                    setNuevoNombre("");
-                  }}
-                >
-                  <Text style={styles.saveButtonText}>Guardar</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity style={styles.customButton} onPress={() => setEditando(true)}>
-                <Text style={styles.customButtonText}>Cambiar nombre</Text>
+          {editando ? (
+            <View style={styles.inputContainer}>
+              <TextInput style={styles.input} placeholder="Nombre" placeholderTextColor="#ccc" value={nombre} onChangeText={setNombre} />
+              <TextInput style={styles.input} placeholder="Alias" placeholderTextColor="#ccc" value={alias} onChangeText={setAlias} />
+              <TextInput style={styles.input} placeholder="Edad" placeholderTextColor="#ccc" value={edad} onChangeText={setEdad} keyboardType="numeric" />
+              <TextInput style={styles.input} placeholder="Escuela" placeholderTextColor="#ccc" value={escuela} onChangeText={setEscuela} />
+
+              <TouchableOpacity style={styles.saveButton} onPress={guardarDatos}>
+                <Text style={styles.saveButtonText}>Guardar</Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.customButton} onPress={() => setEditando(true)}>
+              <Text style={styles.customButtonText}>Editar Perfil</Text>
+            </TouchableOpacity>
+          )}
+          <View style={{ marginTop: 20, alignItems: 'center' }}>
+            <Text style={styles.profileText}>💰 Dinero total recaudado: $1.000</Text>
+            <Text style={styles.profileText}>🪙 Monedas insertadas: 10</Text>
+        </View>
 
         </View>
       </ImageBackground>
@@ -369,11 +404,45 @@ saveButtonText: {
 },
 
 contenedor_analisis: {
-  flex: '1',
+  flex: 1, // sin comillas
   alignItems: 'center',
   justifyContent: 'flex-start',
-  padding: '20',
-}
+  padding: 20, // sin comillas
+},
+caminoContainer: {
+  width: '90%', // o '100%'
+  height: 100,
+  position: 'relative',
+  marginTop: 20,
+  marginBottom: 20,
+  borderRadius: 12,
+  overflow: 'hidden',
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderWidth: 2,
+  borderColor: 'yellow',
+},
+
+meta: {
+  position: 'absolute',
+  width: 30,
+  height: 60,
+  top: 30,
+  right: 30,
+  borderWidth: 2,
+  borderColor: 'red',
+},
+
+personaje: {
+  position: 'absolute',
+  width: 30,
+  height: 60,
+  top: 30,
+  left: 30,
+  borderWidth: 2,
+  borderColor: 'blue',
+},
+
 
 });
 
