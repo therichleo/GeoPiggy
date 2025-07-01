@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Button, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, Button, StyleSheet, ImageBackground, Modal } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { TouchableOpacity, Image, TextInput } from 'react-native';
@@ -115,10 +115,23 @@ function DineroScreen() {
 
 function AnalisisScreen() {
     const [meta, setMeta] = useState(10000);  // Estado para meta editable
+    const [modalVisible, setModalVisible] = useState(false);
+    const [metaInput, setMetaInput] = useState('');
     const { progreso } = useProgress();
     const [edad, setEdad] = useState(null);
 
     useEffect(() => {
+      const cargarMetaGuardada = async () => {
+        try {
+          const metaGuardada = await AsyncStorage.getItem('@meta_usuario');
+          if (metaGuardada !== null) {
+            setMeta(parseInt(metaGuardada));
+          }
+        } catch (e) {
+          console.error("Error cargando meta guardada:", e);
+        }
+      };
+
       const obtenerEdad = async () => {
         try {
           const e = await AsyncStorage.getItem('@edad_usuario');
@@ -128,6 +141,7 @@ function AnalisisScreen() {
         }
       };
 
+      cargarMetaGuardada();
       obtenerEdad();
     }, []);
 
@@ -154,6 +168,23 @@ function AnalisisScreen() {
 
   const porcentajeProgreso = Math.min((progreso / meta) * 100, 100);
 
+  const guardarMeta = async () => {
+    if (!metaInput || isNaN(metaInput) || Number(metaInput) <= 0) {
+      alert("Por favor ingresa un número válido mayor que 0.");
+      return;
+    }
+    const metaNum = Number(metaInput);
+    setMeta(metaNum);
+    try {
+      await AsyncStorage.setItem('@meta_usuario', metaInput);
+      alert("Meta guardada correctamente.");
+      setModalVisible(false);
+      setMetaInput('');
+    } catch (e) {
+      console.error("Error guardando meta:", e);
+      alert("Error guardando la meta.");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -161,7 +192,95 @@ function AnalisisScreen() {
         <View style={[styles.overlay, { justifyContent: 'flex-start', paddingTop: 100 }]}>
           
           <View style={styles.contenedor_analisis}>
-            <Text style={styles.title}>Análisis</Text>
+            
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              style={{
+                backgroundColor: '#007BFF',
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                borderRadius: 10,
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 3,
+                elevation: 5,
+                marginBottom: 15,
+              }}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>✏️ Escribir Meta</Text>
+            </TouchableOpacity>
+
+
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={modalVisible}
+              onRequestClose={() => setModalVisible(false)}
+            >
+              <View style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+              }}>
+                <View style={{
+                  width: '80%',
+                  backgroundColor: 'white',
+                  borderRadius: 10,
+                  padding: 20,
+                  elevation: 10,
+                }}>
+                  <Text style={{ fontSize: 18, marginBottom: 10 }}>Ingrese nueva meta:</Text>
+                  <TextInput
+                    style={{
+                      borderColor: '#ccc',
+                      borderWidth: 1,
+                      borderRadius: 5,
+                      padding: 10,
+                      fontSize: 16,
+                      marginBottom: 20,
+                    }}
+                    keyboardType="numeric"
+                    placeholder="Ej: 15000"
+                    value={metaInput}
+                    onChangeText={setMetaInput}
+                  />
+
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalVisible(false);
+                        setMetaInput('');
+                      }}
+                      style={{
+                        backgroundColor: '#dc3545',
+                        paddingVertical: 10,
+                        paddingHorizontal: 20,
+                        borderRadius: 5,
+                      }}
+                    >
+                      <Text style={{ color: 'white', fontWeight: 'bold' }}>Cancelar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={guardarMeta}
+                      style={{
+                        backgroundColor: '#28a745',
+                        paddingVertical: 10,
+                        paddingHorizontal: 20,
+                        borderRadius: 5,
+                      }}
+                    >
+                      <Text style={{ color: 'white', fontWeight: 'bold' }}>Guardar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+
+            
 
             {/* Menores de 10 años */}
             {categoriaEdad() === 'menor de 10' && (
@@ -205,9 +324,7 @@ function AnalisisScreen() {
                 <Text style={styles.subtitle}>
                   ¿Sabías que para ir de {ruta.desde} a {ruta.hasta} se necesitan {ruta.km} km?
                 </Text>
-                <Text style={styles.subtitle}>
-                  ¡Con lo que llevas ahorrado, podrías hacer ese recorrido!
-                </Text>
+
 
                 {mostrarPorcentaje && (
                   <>
