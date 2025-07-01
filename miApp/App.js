@@ -22,23 +22,26 @@ import backgroundImageMoney from './assets/Money.png'
 
 // Pantalla principal
 function HomeScreen({ navigation }) {
-  const [contador, setContador] = useState(0);
+  const { progreso } = useProgress(); // 👈 acceso al dinero ahorrado
+  const { setProgreso } = useProgress(); // <- Asegúrate de tener esto
   const ws = useRef(null);
 
   useEffect(() => {
-    ws.current = new WebSocket('ws://192.168.1.26/ws');
+    ws.current = new WebSocket('ws://192.168.1.42/ws');
 
     ws.current.onopen = () => {
       console.log('Conexión WebSocket abierta');
     };
-    
+
     ws.current.onmessage = (event) => {
       console.log('Mensaje recibido:', event.data);
       try {
         const json = JSON.parse(event.data);
-        setContador(json.contador ?? 0);
+        const pesos = json.totalPesos ?? 0;
+        setProgreso(pesos); // ✅ ya actualiza el progreso global
       } catch (e) {
         console.error('Error al parsear JSON:', e.message);
+        setProgreso(0); // también puedes dejarlo en 0 si hubo error
       }
     };
 
@@ -55,24 +58,35 @@ function HomeScreen({ navigation }) {
         ws.current.close();
       }
     };
-  }, []);
+    }, []);
 
-  const handleReset = () => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send('reset');
-    }
-  };
+    const handleReset = () => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send("reset");  // envía mensaje al ESP32
+        setProgreso(0);            // opcionalmente actualizar localmente de inmediato
+      } else {
+        console.warn("WebSocket no está abierto");
+      }
+    };
 
   return (
     <View style={styles.container}>
       <ImageBackground source={backgroundImage} style={styles.backgroundImage} resizeMode='cover'>
         <View style={styles.overlay}>
-          <Text style={styles.title}>Bienvenido a GeoPiggy</Text>
-          <Text style={styles.subtitle}>Tu alcancia inteligente de confianza.</Text>
+          <Text style={styles.title}>Bienvenido a EduPiggy</Text>
+          <Text style={styles.subtitle}>Tu alcancía inteligente de confianza.</Text>
+
+          {/* Agrega aquí el dinero ahorrado */}
+          <Text style={[styles.subtitle, { fontSize: 22, marginTop: 20 }]}>💰 Dinero ahorrado: ${progreso}</Text> 
+          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+            <Text style={styles.resetButtonText}>Resetear Dinero</Text>
+          </TouchableOpacity>
         </View>
+
+        
         <View style={styles.footerContainer}>
           <View style={styles.footer}>
-            <CustomButton title="Dinero" onPress={() => navigation.navigate('Dinero')} />
+            {/* Elimina botón de Dinero */}
             <CustomButton title="Perfil" onPress={() => navigation.navigate('Perfil')} />
             <CustomButton title="Metas y Analisis" onPress={() => navigation.navigate('Analisis')} />
           </View>
@@ -81,6 +95,7 @@ function HomeScreen({ navigation }) {
     </View>
   );
 }
+
 
 // Pantalla Dinero
 function DineroScreen() {
@@ -99,7 +114,7 @@ function DineroScreen() {
 }
 
 function AnalisisScreen() {
-    const [meta, setMeta] = useState(10000);
+    const [meta, setMeta] = useState(10000);  // Estado para meta editable
     const { progreso } = useProgress();
     const [edad, setEdad] = useState(null);
 
@@ -115,6 +130,8 @@ function AnalisisScreen() {
 
       obtenerEdad();
     }, []);
+
+    const metaNum = Number(meta) > 0 ? Number(meta) : 1;  
 
     const categoriaEdad = () => {
     if (edad === null) return null;
@@ -296,19 +313,12 @@ function PerfilScreen() {
               <Text style={styles.customButtonText}>Editar Perfil</Text>
             </TouchableOpacity>
           )}
-          <View style={{ marginTop: 20, alignItems: 'center' }}>
-            <Text style={styles.profileText}>💰 Dinero total recaudado: $20.000</Text>
-            <Text style={styles.profileText}>🪙 Monedas insertadas: 34</Text>
-        </View>
 
         </View>
       </ImageBackground>
     </View>
   );
 }
-
-
-
 
 const Stack = createStackNavigator();
 
@@ -372,7 +382,6 @@ export default function App() {
           }}
         >
           <Stack.Screen name="Inicio" component={HomeScreen} />
-          <Stack.Screen name="Dinero" component={DineroScreen} />
           <Stack.Screen name="Perfil" component={PerfilScreen} />
           <Stack.Screen name="Analisis" component={AnalisisScreen} />
         </Stack.Navigator>
@@ -601,6 +610,30 @@ const styles = StyleSheet.create({
   bottom: 10,
   zIndex: 3,
   },
+  resetButton: {
+    backgroundColor: '#d9534f',  // rojo
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginVertical: 15,
 
+    // Sombra para iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+
+    // Elevación para Android
+    elevation: 6,
+  },
+
+  resetButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
 });
+
+
 
